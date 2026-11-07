@@ -72,4 +72,6 @@ npm pack --pack-destination dist
 - Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases/tag/v0.1.1
 - 市场收录 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/12826
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 仓库创建于 2026-11-07，官方 CI 的「仓库满 1 天」门槛可能让首次检查不通过；CI 会在稍后自动重跑。
+- PR check：已通过（12m49s）；Submission gate：skipped，不是失败
+- 仓库创建于 2026-11-07；如果后续 gate 重跑触发「仓库满 1 天」检查，等待次日自动重跑即可
+- 当前状态：等待维护者 review / merge，合并后官网与市场索引会自动重建
