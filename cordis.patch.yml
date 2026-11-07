@@ -1,0 +1,5 @@
+# Bundle 补丁：把插件行插入 profile 的组合树。
+# 浏览器端行为由 package.json 的 dsh.client + exports["./client"] 提供。
+- insert:
+    - id: thinking-level
+      name: dsh-plugin-thinking-level

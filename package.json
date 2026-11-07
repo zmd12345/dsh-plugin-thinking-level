@@ -1,0 +1,53 @@
+{
+  "name": "dsh-plugin-thinking-level",
+  "version": "0.1.1",
+  "description": "根据任务复杂度自动建议思考档位并支持一键切换：简单任务不过度思考、节省 token，复杂任务给足推理、减少返工。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "assets",
+    "docs",
+    "screenshots.json"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-renderer"
+      ]
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "node test/client.test.mjs"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "reasoning-effort",
+    "thinking-level",
+    "token-saving",
+    "productivity"
+  ],
+  "homepage": "https://github.com/zmd12345/dsh-plugin-thinking-level",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zmd12345/dsh-plugin-thinking-level.git"
+  }
+}
