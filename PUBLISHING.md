@@ -66,6 +66,10 @@ tarball: https://github.com/<owner>/dsh-plugin-thinking-level/releases/latest/do
 npm pack --pack-destination dist
 ```
 
-## 当前状态
+## 当前状态（2026-11-07）
 
-本机没有 `gh`，`npm whoami` 未登录，`~/.ssh` 下没有 GitHub key，钥匙串里也没有 github.com 凭据。因此这一步需要你先提供 GitHub 用户名并完成一次登录/推送，或者把 GitHub Token 交给当前会话。
+- GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases/tag/v0.1.1
+- 市场收录 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/12826
+- npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
+- 仓库创建于 2026-11-07，官方 CI 的「仓库满 1 天」门槛可能让首次检查不通过；CI 会在稍后自动重跑。
