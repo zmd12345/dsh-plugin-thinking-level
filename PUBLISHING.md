@@ -69,7 +69,7 @@ npm pack --pack-destination dist
 ## 当前状态（2026-11-07）
 
 - GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
-- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases/tag/v0.1.1
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.2.0，市场条目固定走 latest）
 - 市场收录 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/12826
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
 - PR check：已通过（12m49s）；Submission gate：skipped，不是失败
