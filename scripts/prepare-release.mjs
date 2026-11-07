@@ -32,7 +32,7 @@ description:
   en: Suggests the right thinking level for the current draft and can switch it in one click, so simple tasks avoid overthinking and hard tasks get enough reasoning.
   zh: 根据当前草稿自动建议思考档位并支持一键切换：简单任务不过度思考、节省 token，复杂任务给足推理、减少返工。
 icon: https://raw.githubusercontent.com/${owner}/${repo}/main/assets/icon-180.png
-tarball: https://github.com/${owner}/${repo}/releases/download/v${version}/${repo}.tgz
+tarball: https://github.com/${owner}/${repo}/releases/latest/download/${repo}.tgz
 `;
 
 const dir = join(root, "market", "data", "plugins");
