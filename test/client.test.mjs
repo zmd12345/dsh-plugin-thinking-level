@@ -133,4 +133,27 @@ assert.equal(mod.formatCount(214000), "214k");
 assert.equal(mod.formatCount(1500000), "1.5M");
 assert.equal(mod.formatCount(950), "950");
 
+// 新建会话：优先走 uiWorkspace.connectWorkspace(workspaceId)，而不是 sessions.create({directory})
+const wsCalls = [];
+const mockWorkspace = {
+	workspaces: { list: { getSnapshot: () => ({ items: [{ workspaceId: "w-baby", sessionIds: ["s1"] }] }) } },
+	connectWorkspace: async (id, opts) => { wsCalls.push(["connect", id, opts]); return "s2"; },
+	openSession: (id) => { wsCalls.push(["open", id]); }
+};
+const blockedSessions = { create: async () => { throw new Error("must not fall back to sessions.create"); } };
+const newId = await mod.createSessionIn(mockWorkspace, blockedSessions, "s1", "/Volumes/work/baby_app");
+assert.equal(newId, "s2");
+assert.equal(JSON.stringify(wsCalls), JSON.stringify([["connect", "w-baby", {}], ["open", "s2"]]));
+
+// 兜底：找不到工作区时用 cwd（不是 directory）
+const fallbackCalls = [];
+const noWorkspace = {
+	workspaces: { list: { getSnapshot: () => ({ items: [] }) } },
+	openSession: (id) => { fallbackCalls.push(["open", id]); }
+};
+const fallbackSessions = { create: async (opts) => { fallbackCalls.push(["create", opts]); return "s3"; } };
+const fallbackId = await mod.createSessionIn(noWorkspace, fallbackSessions, "s1", "/Volumes/work/baby_app");
+assert.equal(fallbackId, "s3");
+assert.equal(JSON.stringify(fallbackCalls), JSON.stringify([["create", { cwd: "/Volumes/work/baby_app" }], ["open", "s3"]]));
+
 console.log(`ok: ${cases.length} draft + ${followUpCases.length} follow-up + ${historyCases.length} history cases, metrics valid`);
