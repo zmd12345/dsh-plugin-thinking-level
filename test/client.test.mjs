@@ -61,10 +61,10 @@ const cases = [
 
 const followUpCases = [
 	["更新一下接口文档", null],
-	["这是什么意思？", "low"],
+	["这是什么意思？", null],
 	["继续", null],
 	["重构同步模块，排查并发写入时数据丢失的根因，并补测试", "high"],
-	["把这段文字翻译成英文", "low"]
+	["把这段文字翻译成英文", null]
 ];
 
 for (const [input, expected] of cases) {
@@ -83,4 +83,54 @@ for (const [input, expected] of followUpCases) {
 	assert.equal(actual, expected, `followUp ${JSON.stringify(input)} => ${actual}, expected ${expected}; score=${result && result.score}`);
 }
 
-console.log(`ok: ${cases.length} draft cases + ${followUpCases.length} follow-up cases, bundle exports valid`);
+// 历史上下文：同一任务继续、换任务、项目规则、稳定性补漏
+const historyCases = [
+	{
+		input: "把登录页文案改一下",
+		opts: { followUp: true, history: ["安卓端登录页文案改一下", "鸿蒙端同步一下"], project: "baby_app" },
+		expected: null,
+		why: "同一任务的小改动不重新定档"
+	},
+	{
+		input: "重构同步模块，排查并发写入时数据丢失的根因，并补测试",
+		opts: { followUp: true, history: ["重构同步模块", "排查并发写入"] },
+		expected: "high",
+		why: "追问里出现新的高复杂度信号仍然提醒"
+	},
+	{
+		input: "另外把设置页的开关也改一下",
+		opts: { followUp: true, history: ["重构同步模块"] },
+		expected: "low",
+		why: "明确换任务时按新任务评估"
+	},
+	{
+		input: "帮我看看线上偶尔接口 500、数据不一致的问题",
+		opts: { followUp: false, history: [] },
+		expected: "high",
+		why: "线上/稳定性信号补漏"
+	}
+];
+
+for (const item of historyCases) {
+	const result = mod.analyzeTask(item.input, item.opts);
+	const actual = result === null ? null : result.level;
+	assert.equal(actual, item.expected, `${item.why}: ${JSON.stringify(item.input)} => ${actual}, expected ${item.expected}; score=${result && result.score}; reasons=${result && result.reasons.join("/")}`);
+}
+
+// 会话指标：轮次 + 缓存感知的有效 token
+const m1 = mod.sessionMetrics({ turns: 32 }, { totalTokens: 214000, uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 });
+assert.equal(m1.turns, 32);
+assert.equal(m1.effective, 116000);
+assert.ok(m1.cacheHit > 0.55 && m1.cacheHit < 0.57, `cacheHit=${m1.cacheHit}`);
+
+const m2 = mod.sessionMetrics({ turns: 10 }, { totalTokens: 200000, uncachedInputTokens: 180000, cacheReadTokens: 10000, cacheWriteTokens: 5000, outputTokens: 5000 });
+assert.equal(m2.effective, 191000, "低缓存命中时有效 token 应接近总量");
+
+const m3 = mod.sessionMetrics({ turns: 10 }, { totalTokens: 200000, uncachedInputTokens: 20000, cacheReadTokens: 170000, cacheWriteTokens: 5000, outputTokens: 5000 });
+assert.equal(m3.effective, 47000, "高缓存命中时有效 token 应显著降低");
+
+assert.equal(mod.formatCount(214000), "214k");
+assert.equal(mod.formatCount(1500000), "1.5M");
+assert.equal(mod.formatCount(950), "950");
+
+console.log(`ok: ${cases.length} draft + ${followUpCases.length} follow-up + ${historyCases.length} history cases, metrics valid`);

@@ -92,6 +92,13 @@ const six = await renderWith({
 }, "low");
 assert.ok(six.text.includes("「High」") && !six.text.includes("「Max」"), `six-level must hit High, got: ${six.text}`);
 
+// 4.5 三档模型 Low/Medium/Xhigh：high 应该落到 Xhigh，而不是停在 Medium
+const three = await renderWith({
+	defaultEffort: "medium",
+	efforts: [{ id: "low", name: "Low" }, { id: "medium", name: "Medium" }, { id: "xhigh", name: "Xhigh" }]
+}, "medium");
+assert.ok(three.text.includes("「Xhigh」"), `three-level model should suggest Xhigh, got: ${three.text}`);
+
 // 5. 没有 high 的五档模型：落到次高档 Xhigh，而不是凭空造一个 High
 const five = await renderWith({
 	defaultEffort: "low",
