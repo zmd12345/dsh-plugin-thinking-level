@@ -90,10 +90,15 @@ assert.ok(text.includes("214k tokens"), `expected total tokens, got: ${text}`);
 assert.ok(text.includes("缓存命中 56%"), `expected cache hit, got: ${text}`);
 assert.ok(text.includes("估算计费约 116k"), `expected effective tokens, got: ${text}`);
 
-// 1.5 低于阈值：14 轮 / 约 85k 有效 token 不提醒
+// 1.5 低于阈值：24 轮即使有效 token 超 100k 也不提醒（token 条件已移除）
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 14, usage: { totalTokens: 90000, uncachedInputTokens: 80000, cacheReadTokens: 5000, cacheWriteTokens: 3000, outputTokens: 2000 } });
-assert.equal(container.querySelector("[data-session-notice]"), null, "14 turns / 85k effective must stay quiet");
+view = await render({ turns: 24, usage });
+assert.equal(container.querySelector("[data-session-notice]"), null, "24 turns with >100k effective must stay quiet");
+
+// 1.6 阈值边界：25 轮即提醒
+await act(async () => { view.root.unmount(); });
+view = await render({ turns: 25, usage });
+assert.ok(container.querySelector("[data-session-notice]"), "25 turns must show the session notice");
 
 // 2. 新建会话：加载态 → 恢复
 let resolveCreate;

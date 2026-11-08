@@ -51,19 +51,18 @@
 
 ## 会话过长提醒
 
-同一个会话继续太久，历史上下文会越来越长，每轮更慢、更贵。达到任一阈值时，输入框为空会显示一张“建议新开会话”卡片：
+同一个会话继续太久，历史上下文会越来越长，每轮更慢、更贵。达到阈值时，输入框为空会显示一张“建议新开会话”卡片：
 
-- 已结束轮次 ≥ 15；或
-- 缓存感知的有效 token ≥ 100k。
+- 已结束轮次 ≥ 25（唯一触发条件；token 只作为卡片的展示指标，不再触发提醒）。
 
-有效 token 不是简单累加，而是考虑缓存命中：
+卡片上的估算计费考虑缓存命中，不是简单累加：
 
 ```text
 effective = uncachedInputTokens + cacheWriteTokens + outputTokens + cacheReadTokens × 0.1
 cacheHit   = cacheReadTokens / (uncachedInputTokens + cacheReadTokens + cacheWriteTokens)
 ```
 
-缓存命中率高时，大量 token 是约 1/10 单价的缓存读取，不会因为总量虚高就误报。卡片会显示轮次、累计 token、缓存命中率和估算计费。
+缓存命中率高的会话里大量 token 是约 1/10 单价的缓存读取，估算计费按这个口径给出。卡片会显示轮次、累计 token、缓存命中率和估算计费。
 
 - **新建会话**：在当前工作区直接开一个新会话（`ctx.sessions.create` + `open`），按钮有加载态，失败会显示原因。
 - **本会话不再提醒**：忽略后，再增加 15 轮才会重新提示。

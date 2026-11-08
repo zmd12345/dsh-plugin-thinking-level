@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-thinking-level",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "根据当前任务和最近几轮对话在本地判断合适的推理等级，一键切换；会话过长时提醒并可直接新建会话：简单任务不过度思考、节省 token，复杂任务给足推理。",
   "type": "module",
   "main": "lib/index.js",
