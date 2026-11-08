@@ -69,10 +69,10 @@ npm pack --pack-destination dist
 ## 当前状态（2026-11-07）
 
 - GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
-- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.3.0，市场条目固定走 latest）
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.3.1，市场条目固定走 latest）
 - 市场收录 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/12826
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.3.0（市场条目固定走 `latest/download`，发新版本不用再改条目）
+- 当前插件版本：0.3.1（市场条目固定走 `latest/download`，发新版本不用再改条目）
 - PR check：Build 步骤失败于上游 `data/screenshots.json` 的两个遗留键（`Ultronen/dsh-archived-chats`、`Ultronen/dsh-liquid-glass`），与本站条目无关；本条目已通过 awesome-lint、README parity、entry-path 检查
 - Submission gate：仓库年龄门槛已过，等待自动重跑（旧运行结果尚未刷新）
 - 当前状态：等待 gate 自动放行 + 维护者 review / merge，合并后官网与市场索引会自动重建

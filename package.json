@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-thinking-level",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "根据任务复杂度自动建议思考档位并支持一键切换：简单任务不过度思考、节省 token，复杂任务给足推理、减少返工。",
   "type": "module",
   "main": "lib/index.js",
