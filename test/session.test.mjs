@@ -90,6 +90,11 @@ assert.ok(text.includes("214k tokens"), `expected total tokens, got: ${text}`);
 assert.ok(text.includes("缓存命中 56%"), `expected cache hit, got: ${text}`);
 assert.ok(text.includes("估算计费约 116k"), `expected effective tokens, got: ${text}`);
 
+// 1.5 低于阈值：24 轮 / 约 85k 有效 token 不提醒
+await act(async () => { view.root.unmount(); });
+view = await render({ turns: 24, usage: { totalTokens: 90000, uncachedInputTokens: 80000, cacheReadTokens: 5000, cacheWriteTokens: 3000, outputTokens: 2000 } });
+assert.equal(container.querySelector("[data-session-notice]"), null, "24 turns / 85k effective must stay quiet");
+
 // 2. 新建会话：加载态 → 恢复
 let resolveCreate;
 const createSession = () => new Promise((resolve) => { resolveCreate = resolve; });
