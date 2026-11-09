@@ -54,10 +54,10 @@ icon: https://raw.githubusercontent.com/<owner>/dsh-plugin-thinking-level/main/a
 
 ## 4. 如果不想发 npm
 
-可以打一个预构建包，附到 GitHub Release，并在收录条目里加：
+可以打一个预构建包，附到 GitHub Release，并在收录条目里加（**条目必须固定版本号**——维护者合并时会把 latest 改写为当时的具体版本，此后每次发新版都要跟一个只改 tarball 行的升版 PR）：
 
 ```yaml
-tarball: https://github.com/<owner>/dsh-plugin-thinking-level/releases/latest/download/dsh-plugin-thinking-level.tgz
+tarball: https://github.com/<owner>/dsh-plugin-thinking-level/releases/download/v0.4.1/dsh-plugin-thinking-level-0.4.1.tgz
 ```
 
 打包命令：
@@ -69,9 +69,10 @@ npm pack --pack-destination dist
 ## 当前状态（2026-11-09）
 
 - GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
-- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.4.1，市场条目固定走 latest）
-- 市场收录 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/12826
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.4.1）
+- 收录 PR #12826 已由维护者 fkysly **合并**（2026-11-09 01:28 UTC+8），条目已进官网与市场索引；维护者把 tarball 固定到了合并时的 v0.4.0
+- 升版 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/13670（仅 tarball 行 v0.4.0 → v0.4.1），等待 CI 与维护者合并
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.4.1（市场条目固定走 `latest/download`，发新版本不用再改条目）
-- PR check：Submission gate 已通过（"Entries look good"），check workflow 也已转绿；此前失败的两个上游问题（screenshots.json 遗留键、仓库年龄门槛）均已消除
-- 当前状态：等待维护者 review / merge，合并后官网与市场索引会自动重建
+- 当前插件版本：0.4.1；市场条目已改为固定版本号写法，发新版后须跟升版 PR
+- 网络备注：本机 git 直连 github.com:443 不通，push 需带 `-c http.proxy=http://127.0.0.1:7890`（系统代理；gh 与 curl 走 api.github.com 正常）
+- 当前状态：市场可见版本 v0.4.0，待 #13670 合并后重建索引即为 v0.4.1
