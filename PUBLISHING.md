@@ -66,12 +66,12 @@ tarball: https://github.com/<owner>/dsh-plugin-thinking-level/releases/latest/do
 npm pack --pack-destination dist
 ```
 
-## 当前状态（2026-11-08）
+## 当前状态（2026-11-09）
 
 - GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
-- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.4.0，市场条目固定走 latest）
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.4.1，市场条目固定走 latest）
 - 市场收录 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/12826
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.4.0（市场条目固定走 `latest/download`，发新版本不用再改条目）
+- 当前插件版本：0.4.1（市场条目固定走 `latest/download`，发新版本不用再改条目）
 - PR check：Submission gate 已通过（"Entries look good"），check workflow 也已转绿；此前失败的两个上游问题（screenshots.json 遗留键、仓库年龄门槛）均已消除
 - 当前状态：等待维护者 review / merge，合并后官网与市场索引会自动重建
