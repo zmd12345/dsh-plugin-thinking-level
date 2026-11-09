@@ -117,17 +117,21 @@ for (const item of historyCases) {
 	assert.equal(actual, item.expected, `${item.why}: ${JSON.stringify(item.input)} => ${actual}, expected ${item.expected}; score=${result && result.score}; reasons=${result && result.reasons.join("/")}`);
 }
 
-// 会话指标：轮次 + 缓存感知的有效 token
-const m1 = mod.sessionMetrics({ turns: 32 }, { totalTokens: 214000, uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 });
+// 会话指标：轮次 + 缓存感知的有效 token（fixture 严格对齐宿主 tokenUsage 四桶 schema，无 totalTokens 字段）
+const m1 = mod.sessionMetrics({ turns: 32 }, { uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 });
 assert.equal(m1.turns, 32);
+assert.equal(m1.totalTokens, 224000, "总量应为四桶之和");
 assert.equal(m1.effective, 116000);
 assert.ok(m1.cacheHit > 0.55 && m1.cacheHit < 0.57, `cacheHit=${m1.cacheHit}`);
 
-const m2 = mod.sessionMetrics({ turns: 10 }, { totalTokens: 200000, uncachedInputTokens: 180000, cacheReadTokens: 10000, cacheWriteTokens: 5000, outputTokens: 5000 });
+const m2 = mod.sessionMetrics({ turns: 10 }, { uncachedInputTokens: 180000, cacheReadTokens: 10000, cacheWriteTokens: 5000, outputTokens: 5000 });
 assert.equal(m2.effective, 191000, "低缓存命中时有效 token 应接近总量");
 
-const m3 = mod.sessionMetrics({ turns: 10 }, { totalTokens: 200000, uncachedInputTokens: 20000, cacheReadTokens: 170000, cacheWriteTokens: 5000, outputTokens: 5000 });
+const m3 = mod.sessionMetrics({ turns: 10 }, { uncachedInputTokens: 20000, cacheReadTokens: 170000, cacheWriteTokens: 5000, outputTokens: 5000 });
 assert.equal(m3.effective, 47000, "高缓存命中时有效 token 应显著降低");
+
+// 新会话（usage 缺失）总量应为 null，而不是 0
+assert.equal(mod.sessionMetrics({ turns: 0 }, null).totalTokens, null);
 
 assert.equal(mod.formatCount(214000), "214k");
 assert.equal(mod.formatCount(1500000), "1.5M");

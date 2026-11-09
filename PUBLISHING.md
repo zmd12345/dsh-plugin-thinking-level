@@ -69,10 +69,10 @@ npm pack --pack-destination dist
 ## 当前状态（2026-11-09）
 
 - GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
-- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.4.1）
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.4.2；v0.4.2 修复 token 触发读取宿主不存在的 `totalTokens` 字段导致恒不触发的问题，总量改为四桶求和）
 - 收录 PR #12826 已由维护者 fkysly **合并**（2026-11-09 01:28 UTC+8），条目已进官网与市场索引；维护者把 tarball 固定到了合并时的 v0.4.0
-- 升版 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/13670（仅 tarball 行 v0.4.0 → v0.4.1），等待 CI 与维护者合并
+- 升版 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/13670（原 pin v0.4.1，已追加提交改 pin 为 v0.4.2，相对 main 仍是仅 tarball 一行改动），等待 CI 与维护者合并
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.4.1；市场条目已改为固定版本号写法，发新版后须跟升版 PR
+- 当前插件版本：0.4.2；市场条目为固定版本号写法，发新版后须跟升版 PR
 - 网络备注：本机 git 直连 github.com:443 不通，push 需带 `-c http.proxy=http://127.0.0.1:7890`（系统代理；gh 与 curl 走 api.github.com 正常）
-- 当前状态：市场可见版本 v0.4.0，待 #13670 合并后重建索引即为 v0.4.1
+- 当前状态：市场可见版本 v0.4.0，待 #13670 合并后重建索引即为 v0.4.2

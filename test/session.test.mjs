@@ -78,7 +78,8 @@ async function render({ draft = "", turns = 32, usage = null, subagent = null, c
 	return { root, inputState, statsStore, sessionStore, usageStore };
 }
 
-const usage = { totalTokens: 214000, uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 };
+// fixture 严格对齐宿主 tokenUsage 投影的严格四桶 schema（无 totalTokens；总量为四桶之和 224000）
+const usage = { uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 };
 
 // 1. 超过轮次阈值：显示会话卡，带缓存感知指标
 let view = await render({ usage });
@@ -86,11 +87,11 @@ let notice = container.querySelector("[data-session-notice]");
 assert.ok(notice, "should render the session notice");
 let text = notice.textContent.replace(/\s+/g, " ").trim();
 assert.ok(text.includes("32 轮"), `expected turn count, got: ${text}`);
-assert.ok(text.includes("214k tokens"), `expected total tokens, got: ${text}`);
+assert.ok(text.includes("224k tokens"), `expected total tokens, got: ${text}`);
 assert.ok(text.includes("缓存命中 56%"), `expected cache hit, got: ${text}`);
 assert.ok(text.includes("估算计费约 116k"), `expected effective tokens, got: ${text}`);
 
-// 1.5 低于阈值：24 轮 / 214k 累计 token 不提醒
+// 1.5 低于阈值：24 轮 / 224k 累计 token 不提醒
 await act(async () => { view.root.unmount(); });
 view = await render({ turns: 24, usage });
 assert.equal(container.querySelector("[data-session-notice]"), null, "24 turns / 214k total must stay quiet");
@@ -100,12 +101,12 @@ await act(async () => { view.root.unmount(); });
 view = await render({ turns: 25, usage });
 assert.ok(container.querySelector("[data-session-notice]"), "25 turns must show the session notice");
 
-// 1.7 token 边界：轮次不足但累计总量达 5000 万即提醒；差 1 不提醒
+// 1.7 token 边界：轮次不足但四桶累计达 5000 万即提醒；差 1 不提醒（桶口径，与宿主投影一致）
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 10, usage: { ...usage, totalTokens: 50000000 } });
+view = await render({ turns: 10, usage: { uncachedInputTokens: 50000000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 } });
 assert.ok(container.querySelector("[data-session-notice]"), "50M total tokens must show the session notice");
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 10, usage: { ...usage, totalTokens: 49999999 } });
+view = await render({ turns: 10, usage: { uncachedInputTokens: 49999999, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 } });
 assert.equal(container.querySelector("[data-session-notice]"), null, "49,999,999 total must stay quiet");
 
 // 2. 新建会话：加载态 → 恢复
