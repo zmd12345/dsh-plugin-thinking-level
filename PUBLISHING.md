@@ -69,14 +69,15 @@ npm pack --pack-destination dist
 ## 当前状态（2026-11-11）
 
 - GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
-- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（远端最新为 v0.4.2；v0.4.2 修复 token 触发读取宿主不存在的 `totalTokens` 字段导致恒不触发的问题，总量改为四桶求和）
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（最新 **v0.4.3**；v0.4.2 修复 token 触发读取宿主不存在的 `totalTokens` 字段导致恒不触发的问题，总量改为四桶求和）
 - 收录 PR #12826 已由维护者 fkysly **合并**（2026-11-09 01:28 UTC+8），条目已进官网与市场索引
-- 升版 PR #13673（tarball v0.4.0 → v0.4.2）已**合并**，市场条目现指向 v0.4.2；其 bump 分支 `bump/thinking-level-v0.4.2` 合并后已由 GitHub 删除，下次升版需新建分支
+- 升版 PR #13673（tarball v0.4.0 → v0.4.2）已**合并**；其 bump 分支 `bump/thinking-level-v0.4.2` 合并后已由 GitHub 删除，下次升版需新建分支
+- **v0.4.3 升版 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/14329**（OPEN，tarball v0.4.2 → v0.4.3，描述同步更新；只改 `data/plugins/zmd12345__dsh-plugin-thinking-level.yml` 一个文件）。分支在 fork `zmd12345/awesome-dsh-plugin` 上：`bump/thinking-level-v0.4.3`
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.4.3（**本地已改，尚未发布**）
-- 网络备注：本机 git 直连 github.com:443 现已可用（2026-11-11 实测 `git ls-remote` 无代理直连成功）；系统代理仍在 127.0.0.1:7890，若直连失败可加 `-c http.proxy=http://127.0.0.1:7890`
+- 当前插件版本：0.4.3（已发布：提交 `b391edc` → 推送 main → Release v0.4.3 + tarball 资产 70523 bytes）
+- 网络备注：本机 git 直连 github.com:443 会卡在 HTTP/2 协商（`git push` 超时 75s，而同 URL 的 `curl` 只要 0.7s）。**push 必须加 `-c http.version=HTTP/1.1`**；系统代理 127.0.0.1:7890 当前未运行
 
-### v0.4.3 待发布
+### v0.4.3 已发布
 
 会话过长提醒的触发信号从「累计四桶 token ≥ 5000 万」改为「当前上下文占路由容量 ≥ 75%」。
 
@@ -91,14 +92,16 @@ thinking level 部分未改动。切档不影响缓存前缀（effort 走 `outpu
 
 阈值 0.75 为经验值，按 contextWindow=1M 与压缩阈值 550K–800K 推得，可在 `lib/client.js` 的 `SESSION_CONTEXT_RATIO_LIMIT` 调整。
 
-### v0.4.3 发布步骤（尚未执行）
+### v0.4.3 发布步骤（已执行，供参考）
 
 1. 提交并推送本仓库：
 
    ```sh
    git add -A && git commit -m "fix: 会话提醒改按当前上下文占用触发"
-   git push origin main
+   git -c http.version=HTTP/1.1 push origin main
    ```
+
+   ⚠️ push 必须带 `-c http.version=HTTP/1.1`。本机 git 直连 github.com:443 会卡在 HTTP/2 协商（`git push` 超时 75 秒，而同一个 URL 的 `curl` 只要 0.7 秒），加上强制 HTTP/1.1 后秒通。
 
 2. 打 Release 并上传 tarball：
 
@@ -110,7 +113,9 @@ thinking level 部分未改动。切档不影响缓存前缀（effort 走 `outpu
      --notes "会话提醒改按当前上下文占用触发；卡片显示真实上下文；区分换话题与同任务未完"
    ```
 
-3. 提市场升版 PR（条目只改 tarball 一行，相对 main 一行改动）：
+   发完可用 `curl -sSL -o /tmp/v.tgz <tarball-url>` 核对：状态 200、size 与本地一致、包内 `package/package.json` 版本号正确。
+
+3. 提市场升版 PR（条目只改 tarball 一行 + 描述两行）：
 
    ```sh
    git clone https://github.com/awesome-dsh-plugin/awesome-dsh-plugin
@@ -118,10 +123,19 @@ thinking level 部分未改动。切档不影响缓存前缀（effort 走 `outpu
    git checkout -b bump/thinking-level-v0.4.3
    # 把 data/plugins/zmd12345__dsh-plugin-thinking-level.yml 的 tarball 行改成 v0.4.3
    git commit -am "Bump zmd12345/dsh-plugin-thinking-level to v0.4.3"
-   git push origin bump/thinking-level-v0.4.3
+   git -c http.version=HTTP/1.1 push origin bump/thinking-level-v0.4.3
    gh pr create --repo awesome-dsh-plugin/awesome-dsh-plugin \
      --head bump/thinking-level-v0.4.3 --base main \
      --title "Bump zmd12345/dsh-plugin-thinking-level to v0.4.3"
+   ```
+
+   ⚠️ 上游仓库无 push 权限，须推到自己的 fork `zmd12345/awesome-dsh-plugin`，PR 的 `--head` 用 `zmd12345:<branch>`。fork 已在（#13673 就是这么提的）。
+
+   推之前可用上游自己的校验脚本确认条目合法（它会检查 tarball 必须是 https + GitHub releases 宿主 + .tgz，描述必须单行、locale 必须在站点渲染列表内）：
+
+   ```sh
+   npm ci && node -e "import('./scripts/lib/entries.mjs').then(m => \
+     console.log(m.tarballProblem('<你的 tarball URL>') ?? 'OK'))"
    ```
 
    维护者合并后重建索引，市场可见版本即为 v0.4.3。
