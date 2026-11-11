@@ -66,13 +66,66 @@ tarball: https://github.com/<owner>/dsh-plugin-thinking-level/releases/download/
 npm pack --pack-destination dist
 ```
 
-## 当前状态（2026-11-09）
+## 当前状态（2026-11-11）
 
 - GitHub 仓库：https://github.com/zmd12345/dsh-plugin-thinking-level
-- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（当前 v0.4.2；v0.4.2 修复 token 触发读取宿主不存在的 `totalTokens` 字段导致恒不触发的问题，总量改为四桶求和）
-- 收录 PR #12826 已由维护者 fkysly **合并**（2026-11-09 01:28 UTC+8），条目已进官网与市场索引；维护者把 tarball 固定到了合并时的 v0.4.0
-- 升版 PR：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/13673（tarball v0.4.0 → v0.4.2，相对 main 仅一行改动；前身 #13670 因分支更名 `bump/thinking-level-v0.4.1` → `bump/thinking-level-v0.4.2` 被 GitHub 作废，已关闭并删除旧分支），等待 CI 与维护者合并
+- Release：https://github.com/zmd12345/dsh-plugin-thinking-level/releases（远端最新为 v0.4.2；v0.4.2 修复 token 触发读取宿主不存在的 `totalTokens` 字段导致恒不触发的问题，总量改为四桶求和）
+- 收录 PR #12826 已由维护者 fkysly **合并**（2026-11-09 01:28 UTC+8），条目已进官网与市场索引
+- 升版 PR #13673（tarball v0.4.0 → v0.4.2）已**合并**，市场条目现指向 v0.4.2；其 bump 分支 `bump/thinking-level-v0.4.2` 合并后已由 GitHub 删除，下次升版需新建分支
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.4.2；市场条目为固定版本号写法，发新版后须跟升版 PR
-- 网络备注：本机 git 直连 github.com:443 不通，push 需带 `-c http.proxy=http://127.0.0.1:7890`（系统代理；gh 与 curl 走 api.github.com 正常）
-- 当前状态：市场可见版本 v0.4.0，待 #13673 合并后重建索引即为 v0.4.2
+- 当前插件版本：0.4.3（**本地已改，尚未发布**）
+- 网络备注：本机 git 直连 github.com:443 现已可用（2026-11-11 实测 `git ls-remote` 无代理直连成功）；系统代理仍在 127.0.0.1:7890，若直连失败可加 `-c http.proxy=http://127.0.0.1:7890`
+
+### v0.4.3 待发布
+
+会话过长提醒的触发信号从「累计四桶 token ≥ 5000 万」改为「当前上下文占路由容量 ≥ 75%」。
+
+原口径的问题：累计四桶里 97% 以上是缓存读取，而缓存读取是最便宜的一桶（约 input 的 1/5、output 的 1/20），拿它凑阈值等于用最便宜的东西吓人。同一份数据在两种口径下相差 8.3 倍——一种说该换会话，一种说不用换。而且累计量是单调递增的计数器，反映不出这一轮贵不贵：短会话跑很多轮会误报，长会话轮次不多会漏报。真正决定每轮成本的是当前上下文有多大（每轮都要重发一遍），故改用宿主 `contextPressure` 投影给出的 provider 报告 prompt 大小与路由容量。
+
+同时：
+
+- 卡片不再显示「估算计费约 X」。原 `effective` 用 0.1 折算缓存读，该系数不对应任何真实价格比（真实是 0.2 对 input、0.05 对 output），且把等效 token 标成计费口径不对。改为显示真实数据：当前上下文大小与占容量百分比。
+- 区分「换个话题」和「同一件事没做完」。会话提醒只在输入框为空时出现，此时没有草稿可判，故新增 `taskStillOngoing()` 读最近几轮：任务没做完时换会话要重新交代上下文，此时提示先用 `/compact` 压缩历史；明确换话题才直接建议新开会话。
+
+thinking level 部分未改动。切档不影响缓存前缀（effort 走 `output_config`，不进 prompt 前缀）。
+
+阈值 0.75 为经验值，按 contextWindow=1M 与压缩阈值 550K–800K 推得，可在 `lib/client.js` 的 `SESSION_CONTEXT_RATIO_LIMIT` 调整。
+
+### v0.4.3 发布步骤（尚未执行）
+
+1. 提交并推送本仓库：
+
+   ```sh
+   git add -A && git commit -m "fix: 会话提醒改按当前上下文占用触发"
+   git push origin main
+   ```
+
+2. 打 Release 并上传 tarball：
+
+   ```sh
+   npm pack --pack-destination dist
+   gh release create v0.4.3 dist/dsh-plugin-thinking-level-0.4.3.tgz \
+     --repo zmd12345/dsh-plugin-thinking-level \
+     --title "v0.4.3" \
+     --notes "会话提醒改按当前上下文占用触发；卡片显示真实上下文；区分换话题与同任务未完"
+   ```
+
+3. 提市场升版 PR（条目只改 tarball 一行，相对 main 一行改动）：
+
+   ```sh
+   git clone https://github.com/awesome-dsh-plugin/awesome-dsh-plugin
+   cd awesome-dsh-plugin
+   git checkout -b bump/thinking-level-v0.4.3
+   # 把 data/plugins/zmd12345__dsh-plugin-thinking-level.yml 的 tarball 行改成 v0.4.3
+   git commit -am "Bump zmd12345/dsh-plugin-thinking-level to v0.4.3"
+   git push origin bump/thinking-level-v0.4.3
+   gh pr create --repo awesome-dsh-plugin/awesome-dsh-plugin \
+     --head bump/thinking-level-v0.4.3 --base main \
+     --title "Bump zmd12345/dsh-plugin-thinking-level to v0.4.3"
+   ```
+
+   维护者合并后重建索引，市场可见版本即为 v0.4.3。
+
+### 市场条目说明
+
+市场条目为固定版本号写法（`tarball` 行写死具体版本），不是 `latest`。发新版后必须跟一个升版 PR 改这一行，否则市场仍指向旧版本。描述行可一并更新（README 由维护者用脚本生成，不要手改上游仓库的 README）。

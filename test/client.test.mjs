@@ -117,21 +117,39 @@ for (const item of historyCases) {
 	assert.equal(actual, item.expected, `${item.why}: ${JSON.stringify(item.input)} => ${actual}, expected ${item.expected}; score=${result && result.score}; reasons=${result && result.reasons.join("/")}`);
 }
 
-// 会话指标：轮次 + 缓存感知的有效 token（fixture 严格对齐宿主 tokenUsage 四桶 schema，无 totalTokens 字段）
+// 会话指标：轮次 + 缓存命中 + 当前上下文占容量的比例
+// （fixture 严格对齐宿主 tokenUsage 四桶 schema，无 totalTokens 字段）
 const m1 = mod.sessionMetrics({ turns: 32 }, { uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 });
 assert.equal(m1.turns, 32);
 assert.equal(m1.totalTokens, 224000, "总量应为四桶之和");
-assert.equal(m1.effective, 116000);
 assert.ok(m1.cacheHit > 0.55 && m1.cacheHit < 0.57, `cacheHit=${m1.cacheHit}`);
 
-const m2 = mod.sessionMetrics({ turns: 10 }, { uncachedInputTokens: 180000, cacheReadTokens: 10000, cacheWriteTokens: 5000, outputTokens: 5000 });
-assert.equal(m2.effective, 191000, "低缓存命中时有效 token 应接近总量");
+// 当前上下文取自 contextPressure 投影：provider 报告的 prompt 大小与路由容量
+const p1 = mod.sessionMetrics({ turns: 32 }, { uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 }, { surfaceTokens: 900000, contextWindow: 1000000, pressureTokens: 920000 });
+assert.equal(p1.contextTokens, 920000, "当前上下文应取 pressureTokens");
+assert.equal(p1.contextWindow, 1000000);
+assert.ok(Math.abs(p1.contextRatio - 0.92) < 1e-9, `contextRatio=${p1.contextRatio}`);
 
-const m3 = mod.sessionMetrics({ turns: 10 }, { uncachedInputTokens: 20000, cacheReadTokens: 170000, cacheWriteTokens: 5000, outputTokens: 5000 });
-assert.equal(m3.effective, 47000, "高缓存命中时有效 token 应显著降低");
+// 没有 provider 样本时退回 surface 估计
+const p2 = mod.sessionMetrics({ turns: 10 }, { uncachedInputTokens: 20000, cacheReadTokens: 170000, cacheWriteTokens: 5000, outputTokens: 5000 }, { surfaceTokens: 300000, contextWindow: 1000000 });
+assert.equal(p2.contextTokens, 300000, "无 pressureTokens 时应退回 surfaceTokens");
+assert.ok(Math.abs(p2.contextRatio - 0.3) < 1e-9, `contextRatio=${p2.contextRatio}`);
+
+// 老宿主没有 contextPressure 投影时安全降级：比例未知，不误触发
+const p3 = mod.sessionMetrics({ turns: 10 }, { uncachedInputTokens: 20000, cacheReadTokens: 170000, cacheWriteTokens: 5000, outputTokens: 5000 }, null);
+assert.equal(p3.contextRatio, null, "无 pressure 投影时比例应为 null");
+assert.equal(p3.contextTokens, null);
 
 // 新会话（usage 缺失）总量应为 null，而不是 0
 assert.equal(mod.sessionMetrics({ turns: 0 }, null).totalTokens, null);
+
+// 同任务是否仍在进行：看最近几轮的强信号，且没有换题迹象
+const T = (prompt, response) => ({ prompt, response });
+assert.equal(mod.taskStillOngoing([T("帮我排查这个崩溃问题", "堆栈如下"), T("继续看", "好的")]), true, "未完的排查任务应判定为仍在进行");
+assert.equal(mod.taskStillOngoing([T("帮我排查这个崩溃问题", "堆栈如下"), T("另外，我们来做个新插件", "好")]), false, "明确换题应判定为已结束");
+assert.equal(mod.taskStillOngoing([T("翻译这段话", "好的")]), false, "简单任务不算未完成");
+assert.equal(mod.taskStillOngoing([]), false, "无历史时不算未完成");
+assert.equal(mod.taskStillOngoing([T("帮我排查崩溃", "好的"), T("继续", "继续看")]), true, "追问继续仍是同一任务");
 
 assert.equal(mod.formatCount(214000), "214k");
 assert.equal(mod.formatCount(1500000), "1.5M");

@@ -50,13 +50,14 @@ const catalog = {
 
 const container = document.getElementById("root");
 
-async function render({ draft = "", turns = 32, usage = null, subagent = null, createSession = null } = {}) {
+async function render({ draft = "", turns = 32, usage = null, pressure = null, outline = [], subagent = null, createSession = null } = {}) {
 	const inputState = store({ draft, phase: "plain", attachmentIds: [], draftRev: 0 });
 	const selectionStore = store({ next: { provider: "p", model: "m", reasoningEffort: "low" } });
 	const sessionStore = store({ blank: false, subagent, running: false });
 	const statsStore = store({ turns, steps: turns });
 	const usageStore = store(usage);
-	const outlineStore = store([]);
+	const pressureStore = store(pressure);
+	const outlineStore = store(outline);
 	container.innerHTML = "";
 	const root = ReactDOMClient.createRoot(container);
 	await act(async () => {
@@ -67,6 +68,7 @@ async function render({ draft = "", turns = 32, usage = null, subagent = null, c
 			sessionStore,
 			statsStore,
 			usageStore,
+			pressureStore,
 			outlineStore,
 			project: "baby_app",
 			loadCatalog: async () => catalog,
@@ -80,34 +82,43 @@ async function render({ draft = "", turns = 32, usage = null, subagent = null, c
 
 // fixture 严格对齐宿主 tokenUsage 投影的严格四桶 schema（无 totalTokens；总量为四桶之和 224000）
 const usage = { uncachedInputTokens: 80000, cacheReadTokens: 120000, cacheWriteTokens: 14000, outputTokens: 10000 };
+// fixture 严格对齐宿主 contextPressure 投影：当前上下文 400k / 容量 1M = 40%
+const pressure = { surfaceTokens: 400000, contextWindow: 1000000, pressureTokens: 400000 };
 
 // 1. 超过轮次阈值：显示会话卡，带缓存感知指标
-let view = await render({ usage });
+let view = await render({ usage, pressure });
 let notice = container.querySelector("[data-session-notice]");
 assert.ok(notice, "should render the session notice");
 let text = notice.textContent.replace(/\s+/g, " ").trim();
 assert.ok(text.includes("32 轮"), `expected turn count, got: ${text}`);
 assert.ok(text.includes("224k tokens"), `expected total tokens, got: ${text}`);
 assert.ok(text.includes("缓存命中 56%"), `expected cache hit, got: ${text}`);
-assert.ok(text.includes("估算计费约 116k"), `expected effective tokens, got: ${text}`);
+assert.ok(text.includes("当前上下文 400k"), `expected context size, got: ${text}`);
+assert.ok(text.includes("占上下文 40%"), `expected context ratio, got: ${text}`);
+assert.ok(!text.includes("估算计费"), `estimated cost must be gone, got: ${text}`);
 
-// 1.5 低于阈值：24 轮 / 224k 累计 token 不提醒
+// 1.5 低于阈值：24 轮 / 上下文 40% 不提醒
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 24, usage });
-assert.equal(container.querySelector("[data-session-notice]"), null, "24 turns / 214k total must stay quiet");
+view = await render({ turns: 24, usage, pressure });
+assert.equal(container.querySelector("[data-session-notice]"), null, "24 turns / 40% context must stay quiet");
 
 // 1.6 轮次边界：25 轮即提醒
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 25, usage });
+view = await render({ turns: 25, usage, pressure });
 assert.ok(container.querySelector("[data-session-notice]"), "25 turns must show the session notice");
 
-// 1.7 token 边界：轮次不足但四桶累计达 5000 万即提醒；差 1 不提醒（桶口径，与宿主投影一致）
+// 1.7 上下文边界：轮次不足但上下文占容量达 75% 即提醒；差 1% 不提醒
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 10, usage: { uncachedInputTokens: 50000000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 } });
-assert.ok(container.querySelector("[data-session-notice]"), "50M total tokens must show the session notice");
+view = await render({ turns: 10, usage, pressure: { surfaceTokens: 750000, contextWindow: 1000000, pressureTokens: 750000 } });
+assert.ok(container.querySelector("[data-session-notice]"), "75% context must show the session notice");
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 10, usage: { uncachedInputTokens: 49999999, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 } });
-assert.equal(container.querySelector("[data-session-notice]"), null, "49,999,999 total must stay quiet");
+view = await render({ turns: 10, usage, pressure: { surfaceTokens: 740000, contextWindow: 1000000, pressureTokens: 740000 } });
+assert.equal(container.querySelector("[data-session-notice]"), null, "74% context must stay quiet");
+
+// 1.8 累计 token 再多也不该触发：触发看当前上下文，不看累计消耗
+await act(async () => { view.root.unmount(); });
+view = await render({ turns: 10, usage: { uncachedInputTokens: 500000000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }, pressure });
+assert.equal(container.querySelector("[data-session-notice]"), null, "large cumulative total alone must not trigger");
 
 // 2. 新建会话：加载态 → 恢复
 let resolveCreate;
@@ -136,8 +147,36 @@ assert.equal(container.querySelector("[data-session-notice]"), null, "dismiss mu
 
 // 4. 子代理会话不显示
 await act(async () => { view.root.unmount(); });
-view = await render({ usage, subagent: { address: { mode: "continuable" }, parentAvailable: true } });
+view = await render({ usage, pressure, subagent: { address: { mode: "continuable" }, parentAvailable: true } });
 assert.equal(container.querySelector("[data-session-notice]"), null, "subagent sessions must not show the session notice");
+
+// 4.1 同一任务还没结束：提示 /compact，而不是直接劝换会话
+await act(async () => { view.root.unmount(); });
+view = await render({
+	usage,
+	pressure,
+	outline: [
+		{ prompt: "帮我排查这个崩溃的根因", response: "堆栈在这里" },
+		{ prompt: "继续看", response: "好的" }
+	]
+});
+text = container.querySelector("[data-session-notice]").textContent.replace(/\s+/g, " ").trim();
+assert.ok(text.includes("/compact"), `ongoing task must suggest /compact, got: ${text}`);
+assert.ok(text.includes("还没结束"), `ongoing task must say the task is unfinished, got: ${text}`);
+
+// 4.2 明确换了话题：直接劝新开会话，不提 /compact
+await act(async () => { view.root.unmount(); });
+view = await render({
+	usage,
+	pressure,
+	outline: [
+		{ prompt: "帮我排查这个崩溃的根因", response: "堆栈在这里" },
+		{ prompt: "另外，我们来做个新插件", response: "好" }
+	]
+});
+text = container.querySelector("[data-session-notice]").textContent.replace(/\s+/g, " ").trim();
+assert.ok(!text.includes("/compact"), `a new topic must not suggest /compact, got: ${text}`);
+assert.ok(text.includes("换个话题"), `a new topic should suggest a new session, got: ${text}`);
 
 // 5. 有草稿时不抢档位卡的位置
 await act(async () => { view.root.unmount(); });
