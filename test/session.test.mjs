@@ -107,13 +107,13 @@ await act(async () => { view.root.unmount(); });
 view = await render({ turns: 25, usage, pressure });
 assert.ok(container.querySelector("[data-session-notice]"), "25 turns must show the session notice");
 
-// 1.7 上下文边界：轮次不足但上下文占容量达 75% 即提醒；差 1% 不提醒
+// 1.7 上下文边界：轮次不足但上下文占容量达 60% 即提醒；差 1% 不提醒
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 10, usage, pressure: { surfaceTokens: 750000, contextWindow: 1000000, pressureTokens: 750000 } });
-assert.ok(container.querySelector("[data-session-notice]"), "75% context must show the session notice");
+view = await render({ turns: 10, usage, pressure: { surfaceTokens: 600000, contextWindow: 1000000, pressureTokens: 600000 } });
+assert.ok(container.querySelector("[data-session-notice]"), "60% context must show the session notice");
 await act(async () => { view.root.unmount(); });
-view = await render({ turns: 10, usage, pressure: { surfaceTokens: 740000, contextWindow: 1000000, pressureTokens: 740000 } });
-assert.equal(container.querySelector("[data-session-notice]"), null, "74% context must stay quiet");
+view = await render({ turns: 10, usage, pressure: { surfaceTokens: 590000, contextWindow: 1000000, pressureTokens: 590000 } });
+assert.equal(container.querySelector("[data-session-notice]"), null, "59% context must stay quiet");
 
 // 1.8 累计 token 再多也不该触发：触发看当前上下文，不看累计消耗
 await act(async () => { view.root.unmount(); });
@@ -150,7 +150,8 @@ await act(async () => { view.root.unmount(); });
 view = await render({ usage, pressure, subagent: { address: { mode: "continuable" }, parentAvailable: true } });
 assert.equal(container.querySelector("[data-session-notice]"), null, "subagent sessions must not show the session notice");
 
-// 4.1 同一任务还没结束：提示 /compact，而不是直接劝换会话
+// 4.1 同一任务还没结束：既提新开会话，也提压缩历史，并写清 /compact 的正确用法
+//     （输入框按 / 打开指令列表再选 Compact，不是直接敲 /compact 发送）
 await act(async () => { view.root.unmount(); });
 view = await render({
 	usage,
@@ -161,10 +162,12 @@ view = await render({
 	]
 });
 text = container.querySelector("[data-session-notice]").textContent.replace(/\s+/g, " ").trim();
-assert.ok(text.includes("/compact"), `ongoing task must suggest /compact, got: ${text}`);
 assert.ok(text.includes("还没结束"), `ongoing task must say the task is unfinished, got: ${text}`);
+assert.ok(text.includes("新开会话"), `ongoing task must offer a new session, got: ${text}`);
+assert.ok(text.includes("Compact"), `ongoing task must offer compaction, got: ${text}`);
+assert.ok(text.includes("按 /"), `compaction hint must state how to invoke it, got: ${text}`);
 
-// 4.2 明确换了话题：直接劝新开会话，不提 /compact
+// 4.2 明确换了话题：直接劝新开会话，不提压缩
 await act(async () => { view.root.unmount(); });
 view = await render({
 	usage,
@@ -175,7 +178,7 @@ view = await render({
 	]
 });
 text = container.querySelector("[data-session-notice]").textContent.replace(/\s+/g, " ").trim();
-assert.ok(!text.includes("/compact"), `a new topic must not suggest /compact, got: ${text}`);
+assert.ok(!text.includes("Compact"), `a new topic must not suggest compaction, got: ${text}`);
 assert.ok(text.includes("换个话题"), `a new topic should suggest a new session, got: ${text}`);
 
 // 5. 有草稿时不抢档位卡的位置
