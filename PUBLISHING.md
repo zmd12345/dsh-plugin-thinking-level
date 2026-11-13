@@ -74,8 +74,31 @@ npm pack --pack-destination dist
 - 升版 PR #13673（tarball v0.4.0 → v0.4.2）已**合并**；其 bump 分支 `bump/thinking-level-v0.4.2` 合并后已由 GitHub 删除，下次升版需新建分支
 - 升版 PR #14329（tarball v0.4.2 → v0.4.3）已**合并**，市场条目现指向 v0.4.3（已核对上游 main 的条目内容）
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.4.4（**本地已改，待发布**）
-- 网络备注：本机 git 直连 github.com:443 会卡在 HTTP/2 协商（`git push` 超时 75s，而同 URL 的 `curl` 只要 0.7s）。**push 必须加 `-c http.version=HTTP/1.1`**；系统代理 127.0.0.1:7890 当前未运行
+- 当前插件版本：0.4.5（**本地已改，待发布**）
+- 网络备注：本机 git 直连 github.com:443 会卡在 HTTP/2 协商（`git push` 超时 75s，而同 URL 的 `curl` 只要 0.7s）；2026-11-13 起直连不通，push 需加 `-c http.proxy=http://127.0.0.1:7890`（FlClash）。**push 必须加 `-c http.version=HTTP/1.1`**
+
+### 上游升版 PR 的权限问题（2026-11-13）
+
+市场升版 PR 需要把分支推到自己的 fork `zmd12345/awesome-dsh-plugin`。2026-11-13 推不上去，根因是 GitHub 的 workflow scope 限制：
+
+- 上游 `891b3e3`（2026-11-12）改了 `.github/workflows/build-site.yml`，fork 里还是旧 blob。
+- 推一个以 upstream/main 为基的分支，等于改动 workflow 路径，GitHub 对缺 `workflow` scope 的 token 直接拒绝：`refusing to allow an OAuth App to create or update workflow ... without workflow scope`。
+- REST API 绕不过：建 commit 成功，但建 ref 时同一个检查生效（404）。对照实验：commit 的 diff 不碰 workflow 路径时，建 ref 正常。
+- fork 与上游的历史已分叉（无共同祖先），所以「基于 fork/main 建分支」也不可行——PR 会显示 1367 个文件的差异，且要改的那一行还会冲突。
+
+解法二选一：
+
+1. `gh auth refresh -s workflow` —— 给 token 加上 workflow scope，然后照常 push。
+2. 删除 fork 重新 fork —— 新 fork 与上游完全一致，推送不再受限；代价是 fork 里的分支一起消失（都是已合并 PR 的临时分支），且删除后重建有冷却时间。
+
+### v0.4.5 待发布
+
+在 v0.4.4（阈值 0.6 + /compact 文案）之上，加了让宿主配置问题可携带的两样东西：
+
+- `scripts/check-compaction.mjs`：只读扫描 `~/.dsh/profiles` 下各 profile 的 `cordis.patch.yml`，列出「声明了 reasoningEfforts 但没有默认推理档位（reasoning）」的 provider，并给出要补的配置。npm 用户可 `npm run check:compaction`。
+- README 新增「宿主配置：默认推理档位」章节，说明压缩失效的根因与修法。README 也是市场详情页的内容，所以这条会随包一起给到其他用户。
+
+已验证：对着修复前的 profile fixture 跑，能准确检出 mplan 与 minimax-api 两个 provider；对着当前 profile 跑，报「全部已配置」。
 
 ### 宿主侧修复（非本插件，但与本插件的文案直接相关）
 

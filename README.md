@@ -77,6 +77,35 @@ cacheHit     = cacheReadTokens / (uncachedInputTokens + cacheReadTokens + cacheW
 - **本会话不再提醒**：忽略后，再增加 15 轮才会重新提示。
 - 有草稿时优先显示档位提醒，不抢位置。
 
+## 宿主配置：默认推理档位
+
+这个插件的「压缩历史」建议依赖宿主的压缩能力。宿主的压缩摘要请求**不带** `reasoningEffort`，回落到 provider 的默认档位（profile 里的 `reasoning`）。若 provider 没配这个默认值，请求会以 `thinking.type=disabled` 发出——MiniMax-M3.1-Flash 这类强制 adaptive thinking 的模型会被服务端以 400 拒绝，表现为 **`/compact` 与自动压缩全部失败**（上下文只涨不降）。
+
+在 profile 里给对应 provider 加一行默认档位即可（档位按模型实际支持的填）：
+
+```yaml
+- id: llm-pi-ai
+  name: "@deepseek-ai/dsh-llm-pi-ai"
+  config:
+    providers:
+      mplan:
+        reasoning: medium
+        models:
+          - id: MiniMax-M3.1-Flash
+            reasoningEfforts:
+              low: low
+              medium: medium
+              high: high
+```
+
+检查当前机器有没有这个问题（只读，不改文件）：
+
+```sh
+node scripts/check-compaction.mjs
+```
+
+它会扫描 `~/.dsh/profiles` 下各 profile 的 `cordis.patch.yml`，列出缺少默认推理档位的 provider 并给出要补的配置。
+
 ## 安装
 
 ```sh
