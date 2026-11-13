@@ -74,7 +74,7 @@ npm pack --pack-destination dist
 - 升版 PR #13673（tarball v0.4.0 → v0.4.2）已**合并**；其 bump 分支 `bump/thinking-level-v0.4.2` 合并后已由 GitHub 删除，下次升版需新建分支
 - 升版 PR #14329（tarball v0.4.2 → v0.4.3）已**合并**，市场条目现指向 v0.4.3（已核对上游 main 的条目内容）
 - npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
-- 当前插件版本：0.4.5（**本地已改，待发布**）
+- 当前插件版本：0.4.5（已发布：提交 `62dc802` → 推送 main → Release v0.4.5 + tarball 72876 bytes）
 - 网络备注：本机 git 直连 github.com:443 会卡在 HTTP/2 协商（`git push` 超时 75s，而同 URL 的 `curl` 只要 0.7s）；2026-11-13 起直连不通，push 需加 `-c http.proxy=http://127.0.0.1:7890`（FlClash）。**push 必须加 `-c http.version=HTTP/1.1`**
 
 ### 上游升版 PR 的权限问题（2026-11-13）
@@ -91,7 +91,7 @@ npm pack --pack-destination dist
 1. `gh auth refresh -s workflow` —— 给 token 加上 workflow scope，然后照常 push。
 2. 删除 fork 重新 fork —— 新 fork 与上游完全一致，推送不再受限；代价是 fork 里的分支一起消失（都是已合并 PR 的临时分支），且删除后重建有冷却时间。
 
-### v0.4.5 待发布
+### v0.4.5 已发布
 
 在 v0.4.4（阈值 0.6 + /compact 文案）之上，加了让宿主配置问题可携带的两样东西：
 
@@ -112,7 +112,7 @@ npm pack --pack-destination dist
 
 **这个修复在 profile 文件里，不在本插件仓库里**——插件换机器安装不会带上它。若目标机器的 provider 没写 `reasoning` 默认档位，压缩仍会失败。
 
-### v0.4.4 待发布
+### v0.4.4 已发布
 
 两处改动：
 
