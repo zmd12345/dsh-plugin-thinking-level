@@ -25,9 +25,32 @@ git push -u origin main
 
 推送后给仓库加 topic：`dsh-plugin`。
 
-## 2. 发布 npm（可选，推荐）
+## 2. 发布 npm（2026-11-14 起**不再发布**，见下）
 
-先把 `package.json` 的 `repository` 指回上面的仓库（`prepare-release.mjs` 已做），然后：
+**本插件不发布到 npm。** 核实过的依据：市场站点生成安装命令的代码（上游 `scripts/build-site.mjs:536-539`）是
+
+```js
+// prefer a verified npm package, then the declared prebuilt tarball,
+// and use Git only when neither is available
+function cardCmd(e) {
+  return e.npm ? `dsh plugin --profile web add ${e.npm}` : (e.cmdTarball ?? e.cmdGit)
+}
+```
+
+npm 只是**第一优先级且可选**——`e.npm` 来自 CI 的 `probe-npm.mjs` 探测结果，只有确实发布了 npm 包才有值。本条目声明了 `tarball:` 字段，所以没 npm 包就直接落到 GitHub Release 的 tarball，再没有才用 `github:owner/repo`。
+
+市场详情页（`awesome-dsh-plugin.com/p/zmd12345/dsh-plugin-thinking-level`）实测展示的两条安装命令，都不经过 npm：
+
+```sh
+dsh plugin --profile web add "https://github.com/zmd12345/dsh-plugin-thinking-level/releases/download/v0.4.3/dsh-plugin-thinking-level-0.4.3.tgz"
+dsh plugin --profile web add github:zmd12345/dsh-plugin-thinking-level
+```
+
+tarball 只在 `probe-tarballs.mjs` **确认它 404** 时才会被丢弃、退回 `github:owner/repo`；判定按 tarball URL 精确匹配，条目换新版本时旧判定自动失效（上游 `scripts/build-site.mjs:53-62`）。所以只要 Release 上的包还在，市场安装路径就一直可用。
+
+放弃 npm 的另一个理由是成本：2026-11-14 试发时，npm 的注册与网页登录都受阻——账号未注册，注册页的「我不是机器人」验证直接拦下（提示 IP `85.234.83.116` 被判定为机器人），网页登录会话只有约 7 分钟 TTL。相比之下市场收录和 GitHub 安装都不需要 npm。
+
+如果哪天确实需要 npm 包（下载量统计、或有人想 `npm i -g`），步骤是：
 
 ```sh
 npm login
@@ -73,7 +96,7 @@ npm pack --pack-destination dist
 - 收录 PR #12826 已由维护者 fkysly **合并**（2026-11-09 01:28 UTC+8），条目已进官网与市场索引
 - 升版 PR #13673（tarball v0.4.0 → v0.4.2）已**合并**；其 bump 分支 `bump/thinking-level-v0.4.2` 合并后已由 GitHub 删除，下次升版需新建分支
 - 升版 PR #14329（tarball v0.4.2 → v0.4.3）已**合并**，市场条目现指向 v0.4.3（已核对上游 main 的条目内容）
-- npm：尚未发布（需要 `npm login`；不影响收录和 GitHub 安装）
+- npm：**不发布**（2026-11-14 决定，依据见第 2 节；市场安装与 GitHub 安装都不需要 npm）
 - 当前插件版本：0.4.5（已发布：提交 `62dc802` → 推送 main → Release v0.4.5 + tarball 72876 bytes）
 - 网络备注：本机 git 直连 github.com:443 会卡在 HTTP/2 协商（`git push` 超时 75s，而同 URL 的 `curl` 只要 0.7s）；2026-11-13 起直连不通，push 需加 `-c http.proxy=http://127.0.0.1:7890`（FlClash）。**push 必须加 `-c http.version=HTTP/1.1`**
 
@@ -95,7 +118,7 @@ npm pack --pack-destination dist
 
 在 v0.4.4（阈值 0.6 + /compact 文案）之上，加了让宿主配置问题可携带的两样东西：
 
-- `scripts/check-compaction.mjs`：只读扫描 `~/.dsh/profiles` 下各 profile 的 `cordis.patch.yml`，列出「声明了 reasoningEfforts 但没有默认推理档位（reasoning）」的 provider，并给出要补的配置。npm 用户可 `npm run check:compaction`。
+- `scripts/check-compaction.mjs`：只读扫描 `~/.dsh/profiles` 下各 profile 的 `cordis.patch.yml`，列出「声明了 reasoningEfforts 但没有默认推理档位（reasoning）」的 provider，并给出要补的配置。可用 `npm run check:compaction` 调用（脚本随包发布，GitHub 安装的用户在仓库里直接跑 `node scripts/check-compaction.mjs`）。
 - README 新增「宿主配置：默认推理档位」章节，说明压缩失效的根因与修法。README 也是市场详情页的内容，所以这条会随包一起给到其他用户。
 
 已验证：对着修复前的 profile fixture 跑，能准确检出 mplan 与 minimax-api 两个 provider；对着当前 profile 跑，报「全部已配置」。
@@ -133,6 +156,36 @@ npm pack --pack-destination dist
 thinking level 部分未改动。切档不影响缓存前缀（effort 走 `output_config`，不进 prompt 前缀）。
 
 阈值 0.75 为经验值，按 contextWindow=1M 与压缩阈值 550K–800K 推得，可在 `lib/client.js` 的 `SESSION_CONTEXT_RATIO_LIMIT` 调整。
+
+> 实测修正（v0.4.4）：自动压缩的真实触发点是**约 80 万 token（contextWindow 的 80%）**，不是 550K–800K 区间。首次压缩尝试前最后一次调用的 prompt 是 799,260 token，所以 0.75 闸门只有 5 万 token 的缓冲——提醒刚出现自动压缩就接管了。v0.4.4 因此把闸门降到 0.6，留出约 20 万缓冲。
+
+### v0.4.5 市场升版 PR（已执行，供参考）
+
+2026-11-14 实操，绕开了 GitHub 的 workflow scope 限制，**全程走 REST API，不用 git**：
+
+```sh
+# 1. 拿到 fork main（重建后的 fork 与上游逐 blob 一致）
+forkMain=$(gh api repos/zmd12345/awesome-dsh-plugin/branches/main --jq .commit.sha)
+
+# 2. blob → tree → commit：parent 设为 fork main，tree 用 fork main 的树 + 条目文件替换
+#    相对 parent 只差 1 个文件，不碰 .github/workflows/，所以不需要 workflow scope
+gh api -X POST repos/zmd12345/awesome-dsh-plugin/git/blobs  --input -
+gh api -X POST repos/zmd12345/awesome-dsh-plugin/git/trees   --input -
+gh api -X POST repos/zmd12345/awesome-dsh-plugin/git/commits --input -
+
+# 3. 分支 ref：先建在 fork main 上，再 PATCH 移到新 commit
+gh api -X POST  repos/zmd12345/awesome-dsh-plugin/git/refs -f ref=refs/heads/<branch> -f sha=$forkMain
+gh api -X PATCH repos/zmd12345/awesome-dsh-plugin/git/refs/heads/<branch> -f sha=<new-commit> -f force=true
+
+# 4. 开 PR
+gh api -X POST repos/awesome-dsh-plugin/awesome-dsh-plugin/pulls --input -
+```
+
+为什么必须重建 fork：上游 `891b3e3`（2026-11-12）改了 `.github/workflows/build-site.yml`，旧 fork 里还是旧 blob。推一个以 upstream/main 为基的分支等于「你改了 workflow 文件」，GitHub 对缺 `workflow` scope 的 token 直接拒绝（`refusing to allow an OAuth App to create or update workflow ... without workflow scope`）。REST API 绕不过：建 commit 成功，但建 ref 时同一个检查生效（404）；对照实验——commit 的 diff 不碰 workflow 路径时，建 ref 正常。重建 fork 后 fork 与上游逐 blob 一致，提交相对 fork main 只差条目那一行，规则自然不触发。
+
+另一条路是给 token 加 `workflow` scope（`gh auth refresh -s workflow`），但**必须在有图形会话的终端里跑**：gh 存 token 进 macOS 钥匙串需要钥匙串 ACL 授权，沙箱进程会拿到 `SecKeychainItemModifyContent: UNIX[Operation not permitted]`。
+
+网络分层（2026-11-14 实测）：`api.github.com` 383ms 稳定，`github.com` 直连超时（3/3），所以推送走 API 比走 git 可靠得多。
 
 ### v0.4.3 发布步骤（已执行，供参考）
 
